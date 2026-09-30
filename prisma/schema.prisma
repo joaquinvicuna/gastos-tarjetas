@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+
+  cards         Card[]
+  statements    Statement[]
+  transactions  Transaction[]
+  categories    Category[]
+  merchantRules MerchantCategoryRule[]
+}
+
+// Se puebla dinámicamente vía upsert cuando el pipeline de extracción detecta
+// un nombre de banco en un statement — nunca lo elige el usuario a mano.
+model Bank {
+  id    String @id @default(cuid())
+  code  String @unique
+  name  String
+
+  cards Card[]
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+}
+
+// Se resuelve/crea automáticamente por (userId, bankId, last4) detectados
+// en el statement — el usuario no la crea de antemano.
+model Card {
+  id       String   @id @default(cuid())
+  userId   String
+  bankId   String
+  nickname String
+  type     CardType
+  last4    String?
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bank       Bank        @relation(fields: [bankId], references: [id])
+  statements Statement[]
+
+  @@unique([userId, bankId, last4])
+  @@index([userId])
+}
+
+enum StatementStatus {
+  PENDING
+  PARSED
+  ERROR
+}
+
+enum SourceFormat {
+  PDF
+  XLSX
+  CSV
+}
+
+enum ParserTier {
+  HEURISTIC
+  LLM
+}
+
+model Statement {
+  id           String          @id @default(cuid())
+  userId       String
+  cardId       String
+  periodMonth  Int
+  periodYear   Int
+  fileName     String
+  filePath     String
+  sourceFormat SourceFormat
+  parserTier   ParserTier?
+  status       StatementStatus @default(PENDING)
+  errorMessage String?
+  uploadedAt   DateTime        @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card         Card          @relation(fields: [cardId], references: [id])
+  transactions Transaction[]
+
+  @@unique([cardId, periodYear, periodMonth])
+  @@index([userId, periodYear, periodMonth])
+}
+
+model Category {
+  id       String  @id @default(cuid())
+  userId   String?
+  name     String
+  isSystem Boolean @default(false)
+
+  user          User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  merchantRules MerchantCategoryRule[]
+
+  @@unique([userId, name])
+}
+
+enum Currency {
+  CLP
+  USD
+}
+
+enum CategorizationSource {
+  DEFAULT_RULE
+  USER_RULE
+  MANUAL
+  UNCATEGORIZED
+}
+
+model Transaction {
+  id                   String               @id @default(cuid())
+  statementId          String
+  userId               String
+  date                 DateTime
+  description          String
+  merchantKey          String
+  amountMinor          Int
+  currency             Currency
+  categoryId           String?
+  categorizationSource CategorizationSource @default(UNCATEGORIZED)
+  createdAt            DateTime             @default(now())
+
+  statement Statement @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([userId, date])
+  @@index([userId, categoryId, currency])
+}
+
+// Solo correcciones aprendidas del usuario. Las reglas por defecto del
+// sistema viven en código (src/lib/categorization/defaultRules.ts).
+model MerchantCategoryRule {
+  id          String   @id @default(cuid())
+  userId      String
+  merchantKey String
+  categoryId  String
+  updatedAt   DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, merchantKey])
+}
