@@ -17,11 +17,6 @@ export interface ProcessStatementResult {
   transactionCount: number;
 }
 
-// Cada statement no interpretable recibe su propia tarjeta "sin identificar":
-// como comparten el mismo cardId+periodo colisionarían con
-// @@unique([cardId, periodYear, periodMonth]) apenas hubiera dos statements
-// fallidos en el mismo mes, así que no se reutiliza una tarjeta placeholder
-// compartida.
 async function createUnknownCardId(userId: string): Promise<string> {
   const bank = await prisma.bank.upsert({
     where: { code: "desconocido" },
@@ -33,15 +28,6 @@ async function createUnknownCardId(userId: string): Promise<string> {
     data: { userId, bankId: bank.id, last4: null, type: "CREDIT", nickname: "Sin identificar" },
   });
   return card.id;
-}
-
-function isUniqueConstraintError(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: string }).code === "P2002"
-  );
 }
 
 // El banco es "nice to have" (permite separar dashboards por banco), pero
@@ -56,6 +42,32 @@ function isUsableExtraction(extraction: ExtractionResult): boolean {
     extraction.periodMonth !== null &&
     extraction.periodYear !== null
   );
+}
+
+async function isDuplicateTransaction(
+  tx: any,
+  userId: string,
+  date: Date,
+  amountMinor: number,
+  merchantKey: string,
+  currency: string,
+): Promise<boolean> {
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+  const existing = await tx.transaction.findFirst({
+    where: {
+      userId,
+      date: {
+        gte: startOfDay,
+        lt: endOfDay,
+      },
+      amountMinor,
+      merchantKey,
+      currency: currency as any,
+    },
+  });
+  return !!existing;
 }
 
 export async function processUploadedStatement(
@@ -151,36 +163,41 @@ export async function processUploadedStatement(
       const transactionsData = [];
       for (const t of extraction.transactions) {
         const merchantKey = normalizeMerchant(t.description);
-        const { categoryId, source } = await categorize(tx, userId, merchantKey);
-        transactionsData.push({
-          statementId: created.id,
+        const isDuplicate = await isDuplicateTransaction(
+          tx,
           userId,
-          date: t.date,
-          description: t.description,
+          t.date,
+          t.amountMinor,
           merchantKey,
-          amountMinor: t.amountMinor,
-          currency: t.currency,
-          categoryId,
-          categorizationSource: source,
-        });
+          t.currency,
+        );
+        if (!isDuplicate) {
+          const { categoryId, source } = await categorize(tx, userId, merchantKey);
+          transactionsData.push({
+            statementId: created.id,
+            userId,
+            date: t.date,
+            description: t.description,
+            merchantKey,
+            amountMinor: t.amountMinor,
+            currency: t.currency,
+            categoryId,
+            categorizationSource: source,
+          });
+        }
       }
 
       await tx.transaction.createMany({ data: transactionsData });
 
-      return created;
+      return { ...created, insertedTransactionCount: transactionsData.length };
     });
 
     return {
       statementId: statement.id,
       status: "PARSED",
-      transactionCount: extraction.transactions.length,
+      transactionCount: (statement as any).insertedTransactionCount ?? 0,
     };
   } catch (err) {
-    if (isUniqueConstraintError(err)) {
-      throw new Error(
-        "Ya subiste un statement para esta tarjeta y este periodo (mes/año). Bórralo primero si quieres reemplazarlo.",
-      );
-    }
     throw err;
   }
 }

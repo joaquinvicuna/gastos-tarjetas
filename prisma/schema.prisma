@@ -90,7 +90,6 @@ model Statement {
   card         Card          @relation(fields: [cardId], references: [id])
   transactions Transaction[]
 
-  @@unique([cardId, periodYear, periodMonth])
   @@index([userId, periodYear, periodMonth])
 }
 

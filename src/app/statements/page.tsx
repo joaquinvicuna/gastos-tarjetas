@@ -17,9 +17,14 @@ export default async function StatementsPage() {
     <main className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Statements</h1>
-        <Link href="/dashboard" className="text-sm underline">
-          Dashboard
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/analysis" className="text-sm underline">
+            Analysis
+          </Link>
+          <Link href="/dashboard" className="text-sm underline">
+            Dashboard
+          </Link>
+        </div>
       </div>
 
       <UploadForm />

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { LogoutButton } from "@/components/LogoutButton";
 import { PeriodSelector } from "@/components/PeriodSelector";
 import { MonthlySummaryCharts } from "@/components/MonthlySummaryCharts";
+import { UploadForm } from "@/components/UploadForm";
 import { formatAmountFromMinorUnits } from "@/lib/money";
 import type { Currency } from "@prisma/client";
 
@@ -16,23 +17,35 @@ export default async function DashboardPage({
   const userId = session!.user.id;
   const params = await searchParams;
 
-  const periods = await prisma.statement.findMany({
-    where: { userId, status: "PARSED" },
-    distinct: ["periodYear", "periodMonth"],
-    select: { periodYear: true, periodMonth: true },
-    orderBy: [{ periodYear: "desc" }, { periodMonth: "desc" }],
+  const transactions = await prisma.transaction.findMany({
+    where: { userId },
+    select: { date: true },
+    orderBy: { date: "desc" },
   });
+
+  const periods = Array.from(
+    new Map(
+      transactions.map((t) => {
+        const year = t.date.getFullYear();
+        const month = t.date.getMonth() + 1;
+        return [`${year}-${month}`, { periodYear: year, periodMonth: month }];
+      }),
+    ).values(),
+  ).sort((a, b) => b.periodYear - a.periodYear || b.periodMonth - a.periodMonth);
 
   const now = new Date();
   const selectedYear = Number(params.year) || periods[0]?.periodYear || now.getFullYear();
   const selectedMonth = Number(params.month) || periods[0]?.periodMonth || now.getMonth() + 1;
+
+  const startDate = new Date(selectedYear, selectedMonth - 1, 1);
+  const endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
 
   const [categoryRows, currencyRows] = await Promise.all([
     prisma.transaction.groupBy({
       by: ["categoryId", "currency"],
       where: {
         userId,
-        statement: { periodYear: selectedYear, periodMonth: selectedMonth },
+        date: { gte: startDate, lte: endDate },
       },
       _sum: { amountMinor: true },
     }),
@@ -40,7 +53,7 @@ export default async function DashboardPage({
       by: ["currency"],
       where: {
         userId,
-        statement: { periodYear: selectedYear, periodMonth: selectedMonth },
+        date: { gte: startDate, lte: endDate },
       },
       _sum: { amountMinor: true },
     }),
@@ -70,6 +83,9 @@ export default async function DashboardPage({
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Dashboard</h1>
         <div className="flex items-center gap-4">
+          <Link href="/analysis" className="text-sm underline">
+            Analysis
+          </Link>
           <Link href="/statements" className="text-sm underline">
             Statements
           </Link>
@@ -78,6 +94,8 @@ export default async function DashboardPage({
       </div>
 
       <PeriodSelector periods={periods} selectedYear={selectedYear} selectedMonth={selectedMonth} />
+
+      <UploadForm />
 
       {categoryBreakdown.length === 0 ? (
         <p className="text-sm opacity-70">
