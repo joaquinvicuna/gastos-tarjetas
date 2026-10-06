@@ -77,13 +77,13 @@ export default async function AnalysisPage({
   const categoryNameById = new Map(categories.map((c) => [c.id, c.name]));
 
   const categoryBreakdown1 = categoryRows1.map((r) => ({
-    category: r.categoryId ? (categoryNameById.get(r.categoryId) ?? "Otros") : "Sin categoría",
+    category: r.categoryId ? (categoryNameById.get(r.categoryId) ?? "Other") : "Uncategorized",
     currency: r.currency,
     amountMinor: r._sum.amountMinor ?? 0,
   }));
 
   const categoryBreakdown2 = categoryRows2.map((r) => ({
-    category: r.categoryId ? (categoryNameById.get(r.categoryId) ?? "Otros") : "Sin categoría",
+    category: r.categoryId ? (categoryNameById.get(r.categoryId) ?? "Other") : "Uncategorized",
     currency: r.currency,
     amountMinor: r._sum.amountMinor ?? 0,
   }));

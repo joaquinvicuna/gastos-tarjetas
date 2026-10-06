@@ -8,7 +8,7 @@ export function LogoutButton() {
       onClick={() => signOut({ callbackUrl: "/login" })}
       className="text-sm underline"
     >
-      Cerrar sesión
+      Logout
     </button>
   );
 }

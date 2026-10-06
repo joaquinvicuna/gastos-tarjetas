@@ -29,7 +29,7 @@ function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Email o contraseña incorrectos");
+      setError("Invalid email or password");
       return;
     }
 
@@ -42,7 +42,7 @@ function LoginForm() {
       onSubmit={handleSubmit}
       className="w-full max-w-sm space-y-4 rounded-lg border border-black/10 dark:border-white/15 p-6"
     >
-      <h1 className="text-xl font-semibold">Iniciar sesión</h1>
+      <h1 className="text-xl font-semibold">Log in</h1>
 
       <div className="space-y-1">
         <label htmlFor="email" className="text-sm font-medium">
@@ -60,7 +60,7 @@ function LoginForm() {
 
       <div className="space-y-1">
         <label htmlFor="password" className="text-sm font-medium">
-          Contraseña
+          Password
         </label>
         <input
           id="password"
@@ -79,13 +79,13 @@ function LoginForm() {
         disabled={loading}
         className="w-full rounded bg-foreground text-background py-2 text-sm font-medium disabled:opacity-50"
       >
-        {loading ? "Ingresando..." : "Ingresar"}
+        {loading ? "Logging in..." : "Log in"}
       </button>
 
       <p className="text-sm text-center">
-        ¿No tienes cuenta?{" "}
+        Don't have an account?{" "}
         <Link href="/register" className="underline">
-          Regístrate
+          Sign up
         </Link>
       </p>
     </form>

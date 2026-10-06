@@ -68,7 +68,7 @@ export default async function DashboardPage({
   const categoryNameById = new Map(categories.map((c) => [c.id, c.name]));
 
   const categoryBreakdown = categoryRows.map((r) => ({
-    category: r.categoryId ? (categoryNameById.get(r.categoryId) ?? "Otros") : "Sin categoría",
+    category: r.categoryId ? (categoryNameById.get(r.categoryId) ?? "Other") : "Uncategorized",
     currency: r.currency,
     amountMinor: r._sum.amountMinor ?? 0,
   }));
@@ -93,24 +93,36 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      <PeriodSelector periods={periods} selectedYear={selectedYear} selectedMonth={selectedMonth} />
-
-      <UploadForm />
-
-      {categoryBreakdown.length === 0 ? (
-        <p className="text-sm opacity-70">
-          No hay transacciones para {selectedMonth}/{selectedYear}.
-        </p>
+      {periods.length === 0 ? (
+        <div className="space-y-6">
+          <div className="text-center space-y-3">
+            <h2 className="text-lg font-semibold">Get Started</h2>
+            <p className="text-sm opacity-70">Upload your first credit card statement to see your spending analysis</p>
+          </div>
+          <UploadForm />
+        </div>
       ) : (
         <>
-          <div className="flex gap-4 text-sm">
-            {currencyTotals.map((c) => (
-              <span key={c.currency} className="font-medium">
-                Total {c.currency}: {formatAmountFromMinorUnits(c.amountMinor, c.currency as Currency)}
-              </span>
-            ))}
-          </div>
-          <MonthlySummaryCharts data={categoryBreakdown} />
+          <PeriodSelector periods={periods} selectedYear={selectedYear} selectedMonth={selectedMonth} />
+
+          <UploadForm />
+
+          {categoryBreakdown.length === 0 ? (
+            <p className="text-sm opacity-70">
+              No transactions for {selectedMonth}/{selectedYear}.
+            </p>
+          ) : (
+            <>
+              <div className="flex gap-4 text-sm">
+                {currencyTotals.map((c) => (
+                  <span key={c.currency} className="font-medium">
+                    Total {c.currency}: {formatAmountFromMinorUnits(c.amountMinor, c.currency as Currency)}
+                  </span>
+                ))}
+              </div>
+              <MonthlySummaryCharts data={categoryBreakdown} />
+            </>
+          )}
         </>
       )}
     </main>

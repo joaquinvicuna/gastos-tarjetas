@@ -31,7 +31,7 @@ export default async function StatementsPage() {
 
       <div className="space-y-2">
         {statements.length === 0 && (
-          <p className="text-sm opacity-70">Aún no subes statements.</p>
+          <p className="text-sm opacity-70">No statements uploaded yet.</p>
         )}
         {statements.map((s) => (
           <Link
@@ -49,7 +49,7 @@ export default async function StatementsPage() {
               </span>
             </div>
             <div className="opacity-70">
-              {s.periodMonth}/{s.periodYear} · {s._count.transactions} transacciones ·{" "}
+              {s.periodMonth}/{s.periodYear} · {s._count.transactions} transactions ·{" "}
               {s.fileName}
             </div>
             {s.errorMessage && <div className="text-red-600 mt-1">{s.errorMessage}</div>}

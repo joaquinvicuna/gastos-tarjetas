@@ -27,7 +27,7 @@ export default function RegisterPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "No se pudo crear la cuenta");
+      setError(data.error ?? "Could not create account");
       setLoading(false);
       return;
     }
@@ -50,11 +50,11 @@ export default function RegisterPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-sm space-y-4 rounded-lg border border-black/10 dark:border-white/15 p-6"
       >
-        <h1 className="text-xl font-semibold">Crear cuenta</h1>
+        <h1 className="text-xl font-semibold">Create account</h1>
 
         <div className="space-y-1">
           <label htmlFor="name" className="text-sm font-medium">
-            Nombre (opcional)
+            Name (optional)
           </label>
           <input
             id="name"
@@ -81,7 +81,7 @@ export default function RegisterPage() {
 
         <div className="space-y-1">
           <label htmlFor="password" className="text-sm font-medium">
-            Contraseña
+            Password
           </label>
           <input
             id="password"
@@ -101,13 +101,13 @@ export default function RegisterPage() {
           disabled={loading}
           className="w-full rounded bg-foreground text-background py-2 text-sm font-medium disabled:opacity-50"
         >
-          {loading ? "Creando..." : "Crear cuenta"}
+          {loading ? "Creating..." : "Create account"}
         </button>
 
         <p className="text-sm text-center">
-          ¿Ya tienes cuenta?{" "}
+          Already have an account?{" "}
           <Link href="/login" className="underline">
-            Inicia sesión
+            Log in
           </Link>
         </p>
       </form>
