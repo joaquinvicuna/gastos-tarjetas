@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { hash } from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const passwordHash = await hash(password);
+    const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
     const user = await prisma.user.create({
       data: { email, passwordHash, name },
     });
