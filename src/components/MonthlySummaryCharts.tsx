@@ -111,10 +111,7 @@ export function MonthlySummaryCharts({ data }: { data: CategoryDatum[] }) {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => {
-                        const formatted = formatAmountFromMinorUnits(Math.round(value * 100), currency);
-                        return formatted;
-                      }}
+                      formatter={(value) => formatAmountFromMinorUnits(Math.round((value as number) * 100), currency)}
                       contentStyle={{
                         backgroundColor: "var(--background)",
                         border: "1px solid var(--foreground)",
