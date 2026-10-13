@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { verify } from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 import { authConfig } from "@/lib/auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -25,8 +25,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         if (!user) return null;
 
-        const valid = await verify(user.passwordHash, password);
-        if (!valid) return null;
+        const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
+        if (passwordHash !== user.passwordHash) return null;
 
         return { id: user.id, email: user.email, name: user.name };
       },
