@@ -73,13 +73,10 @@ export function MonthlySummaryCharts({ data }: { data: CategoryDatum[] }) {
                 <ResponsiveContainer width="100%" height={Math.max(200, rows.length * 40)}>
                   <BarChart data={rows} layout="vertical" margin={{ left: 80 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" tickFormatter={(v: number) => v.toLocaleString("es-CL")} />
+                    <XAxis type="number" tickFormatter={(v: number) => v.toLocaleString("en-US")} />
                     <YAxis type="category" dataKey="category" width={75} tick={{ fontSize: 11 }} />
                     <Tooltip
-                      formatter={(value: number) => {
-                        const formatted = formatAmountFromMinorUnits(Math.round(value * 100), currency);
-                        return formatted;
-                      }}
+                      formatter={(value) => formatAmountFromMinorUnits(Math.round((value as number) * 100), currency)}
                       labelFormatter={(label) => label}
                       contentStyle={{
                         backgroundColor: "var(--background)",
@@ -105,7 +102,7 @@ export function MonthlySummaryCharts({ data }: { data: CategoryDatum[] }) {
                       outerRadius={80}
                       paddingAngle={2}
                       dataKey="amount"
-                      label={(entry) =>
+                      label={(entry: any) =>
                         `${entry.category}: ${entry.percentage}%`
                       }
                     >
